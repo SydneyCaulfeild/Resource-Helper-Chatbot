@@ -24,10 +24,11 @@ function onMessage(event) {
   
   // If the user needs help.
   if (str.includes("help")) {
-    var message = " Here is a list of my features. Please note, all document and folder names must be enclosed in double quotes:" + "\n1. To create a new document and add it to your Drive, write <New doc: \"DocName\" >  " + 
-      "\n2. To create a new document and add it to an existing Drive folder, write <New doc: \"DocName\" Folder: \"FolderName\" >" + "\n3. To create a new folder in drive, write <New folder: \"FolderName\">." +
-        "\n4. To open an existing folder, write <Open folder: \"FolderName\"> \n5. To see a list of parent folders of a document with a unique name, write <Find doc: \"DocName\">" + 
-          "\n6. To give editing access to others, write <Give access: \"FileName\" @user1, @user2...> \nWrite <help> if you need to view this message again.";
+    var message = " Here is a list of my features. Please note, all document and folder names must be enclosed in double quotes:" + "\n1. To create a new document and add it to your Drive, write *<New doc: \"DocName\" >*  " + 
+      "\n2. To create a new document and add it to an existing Drive folder, write *<New doc: \"DocName\" Folder: \"FolderName\" >*" + "\n3. To create a new folder in drive, write *<New folder: \"FolderName\">*." +
+        "\n4. To open an existing folder, write *<Open folder: \"FolderName\">* \n5. To see a list of parent folders of a document with a unique name, write *<Find doc: \"DocName\">*" + 
+          "\n6. To give editing access to a file, write *<Give file access: \"FileName\" @user1, @user2...>* " + 
+            " \n7. To give editing access to a folder, write *<Give folder access: \"FolderName\" @user1, @user2...>* \nWrite <help> if you need to view this message again.";
     return { "text": message };
   }
   
@@ -175,7 +176,7 @@ function onMessage(event) {
   }
   
   // If a user wants to be added as an editor to a document.
-  else if (strLowerCase.includes("give access:")) {
+  else if (strLowerCase.includes("give file access:")) {
     var fileName = str.match(/"(.*?)"/g)[0];
     fileName = fileName.substring(1, fileName.length-1);
     var file = DriveApp.getFilesByName(fileName).next();
@@ -210,6 +211,42 @@ function onMessage(event) {
     return createCardResponse(widgets);
   }
   
+  // If a user wants to be added as an editor to an entire folder.
+  else if (strLowerCase.includes("give folder access:")) {
+    var folderName = str.match(/"(.*?)"/g)[0];
+    folderName = folderName.substring(1, folderName.length-1);
+    var folder = DriveApp.getFoldersByName(folderName).next();
+    var folderId = folder.getId();
+    
+    var requests = event.message.annotations;
+    var message = "I have added the following users as editors to " + folderName + ":";
+    
+    for (var i = 1; i < requests.length; i++){
+      var requestingUser = requests[i].userMention.user;
+      folder.addEditor(requestingUser.email);          
+      message += "\n- " + requestingUser.displayName;
+    }
+
+    
+    var widgets = [{
+    "textParagraph": {
+      "text": message
+    },
+    "buttons": [{
+      "textButton": {
+        "text": "Open the folder: " + folderName,
+        "onClick": {
+          "openLink": {
+            "url": "https://drive.google.com/corp/drive/folders/" + folderId 
+          }
+        }
+      }
+    }]
+    }];
+
+    return createCardResponse(widgets);
+  }
+  
   
   // If the user did not send an appropriate command.
   return { "text": "I am sorry, that is not one of my commands. Please type <help> to view commands I respond to." };
@@ -230,10 +267,11 @@ function onAddToSpace(event) {
     message = "Thank you for adding me to " + event.space.displayName + "!";
   }
 
-    message = message + " Here is a list of my features. Please note, all document and folder names must be enclosed in double quotes:" + "\n1. To create a new document and add it to your Drive, write <New doc: \"DocName\" >  " + 
-      "\n2. To create a new document and add it to an existing Drive folder, write <New doc: \"DocName\" Folder: \"FolderName\" >" + "\n3. To create a new folder in drive, write <New folder: \"FolderName\">." +
-        "\n4. To open an existing folder, write <Open folder: \"FolderName\"> \n5. To see a list of parent folders of a document with a unique name, write <Find doc: \"DocName\">" + 
-          "\n6. To give editing access to others, write <Give access: \"FileName\" @user1, @user2...> \nWrite <help> if you need to view this message again.";
+    message = message + " Here is a list of my features. Please note, all document and folder names must be enclosed in double quotes:" + "\n1. To create a new document and add it to your Drive, write *<New doc: \"DocName\" >*  " + 
+      "\n2. To create a new document and add it to an existing Drive folder, write *<New doc: \"DocName\" Folder: \"FolderName\" >*" + "\n3. To create a new folder in drive, write *<New folder: \"FolderName\">*." +
+        "\n4. To open an existing folder, write *<Open folder: \"FolderName\">* \n5. To see a list of parent folders of a document with a unique name, write *<Find doc: \"DocName\">*" + 
+          "\n6. To give editing access to a file, write *<Give file access: \"FileName\" @user1, @user2...>* " + 
+            " \n7. To give editing access to a folder, write *<Give folder access: \"FolderName\" @user1, @user2...>* \nWrite <help> if you need to view this message again.";
 
   return { "text": message };
 }

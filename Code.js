@@ -136,12 +136,14 @@ function onMessage(event) {
   
   // If the user wants to know where to find a doc with a unique name. 
   else if (strLowerCase.includes("find doc:")) {
+    // Get file name
     var fileName = str.match(/"(.*?)"/g)[0];
     fileName = fileName.substring(1, fileName.length-1);
+    // Find the file and the parent folders
     var file = DriveApp.getFilesByName(fileName).next();
     var parentFolders = file.getParents();
-    var message = "Here are name(s) of parent folder(s) of "+ fileName + ":";
     
+    var message = "Here are name(s) of parent folder(s) of "+ fileName + ":";
     while (parentFolders.hasNext()) {
       var folder = parentFolders.next();
       message += "\n- " + folder.getName();
@@ -162,9 +164,11 @@ function onMessage(event) {
     // Get the list of people mentioned in the message
     var requests = event.message.annotations;
     
+    // if the user wants to give editing access
     if (strLowerCase.includes("edit")) {
       var type = "editors";
     }  
+    // Else if the user wants to give commenting access
     else {
       var type = "commenters";
     }  
@@ -204,21 +208,24 @@ function onMessage(event) {
   
   // If a user wants to be added as an editor or a viewer to an entire folder.
   else if (strLowerCase.includes("give edit access to folder:") || strLowerCase.includes("give view access to folder:")) {
+    // Get the folder name and find the folder
     var folderName = str.match(/"(.*?)"/g)[0];
     folderName = folderName.substring(1, folderName.length-1);
     var folder = DriveApp.getFoldersByName(folderName).next();
     var folderId = folder.getId();
     
+    // If the user wants to give editing access
     if (strLowerCase.includes("edit")) {
       var type = "editors";
     }  
+    // Else if the user wants to give viewing access
     else {
       var type = "viewers";
     }
     
     var requests = event.message.annotations;
     var message = "I have added the following users as " + type + " to " + folderName + ":";
-    
+    // Start index at 1 to skip the annotation for the bot
     for (var i = 1; i < requests.length; i++){
       if (type == "editors") {
         folder.addEditor(requests[i].userMention.user.email);   

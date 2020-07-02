@@ -1,19 +1,4 @@
 /**
- * Returns an interactive card with widgets to Hangouts Chat.
- *
- * @param {Object} widgets that will be displayed in the card.
- */
-function createCardResponse(widgets) {
-  return {
-    cards: [{
-      sections: [{
-        widgets: widgets
-      }]
-    }]
-  };
-}
-
-/**
  * Responds to a MESSAGE event in Hangouts Chat.
  *
  * @param {Object} event the event object from Hangouts Chat
@@ -321,6 +306,20 @@ function onMessage(event) {
   return { "text": "I am sorry, that is not one of my commands. Please type <help> to view commands I respond to." };
 }
 
+/**
+ * Returns an interactive card with widgets to Hangouts Chat.
+ *
+ * @param {Object} widgets that will be displayed in the card.
+ */
+function createCardResponse(widgets) {
+  return {
+    cards: [{
+      sections: [{
+        widgets: widgets
+      }]
+    }]
+  };
+}
 
 /**
  * Responds to an ADDED_TO_SPACE event in Hangouts Chat.

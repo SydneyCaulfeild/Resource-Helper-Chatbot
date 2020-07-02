@@ -1,3 +1,10 @@
+// Id for a team's template doc. The owner of this doc must first share it with a user before that user can make a copy
+var templateDocId = "1AodNqugPXANOPvgI4VCPIpFRfxUT6Qe7mxmX33ip45A";
+
+// Emails of team members who will be given access to files or folders when you say share with team
+var teamEmails = ["scaulfeild@google.com", "tonyshen@google.com", "miasya@google.com"];
+
+
 /**
  * Responds to a MESSAGE event in Hangouts Chat
  *
@@ -246,6 +253,71 @@ function onMessage(event) {
         "onClick": {
           "openLink": {
             "url": "https://drive.google.com/corp/drive/folders/" + folderId 
+          }
+        }
+      }
+    }]
+    }];
+
+    return createCardResponse(widgets);
+  }
+  
+    // If a user wants a new doc with their team's template
+  else if (strLowerCase.includes("new doc with template")) { 
+    var widgets = [{
+    "textParagraph": {
+      "text": "I have made you a new file with your team's template."
+    },
+    "buttons": [{
+      "textButton": {
+        "text": "Open new file",
+        "onClick": {
+          "openLink": {
+            "url": "https://docs.google.com/document/d/" + templateDocId + "/copy"
+          }
+        }
+      }
+    }]
+    }];
+
+    return createCardResponse(widgets);
+  }  
+  
+  // Give your team edit access to a doc or folder
+  else if (strLowerCase.includes("give team edit access to doc:") || strLowerCase.includes("give team edit access to folder:")) {
+    var Name = str.match(/"(.*?)"/g)[0];
+    Name = Name.substring(1, Name.length-1);
+    
+    if (strLowerCase.includes("doc")) {
+      var file = DriveApp.getFilesByName(Name).next();
+      var Id = file.getId();
+      file.addEditors(teamEmails);
+      var type = "file";
+      var url = "https://docs.google.com/document/d/" + Id + "/edit";
+    }
+    else {
+      var folder = DriveApp.getFoldersByName(Name).next();
+      var Id = folder.getId();
+      folder.addEditors(teamEmails);
+      var type = "folder";
+      var url = "https://drive.google.com/corp/drive/folders/" + Id; 
+    }
+        
+    var message = "I have added the following users as editors to " + Name + ":";
+    for (var i = 0; i < teamEmails.length; i++){          
+      message += "\n- " + teamEmails[i];
+    }
+    
+    var widgets = [{
+    "textParagraph": {
+      "text": message
+    },
+    "buttons": [{
+      "textButton": {
+        "text": "Open the " + type + ": " + Name,
+        "onClick": {
+          "openLink": {
+            "url": url
           }
         }
       }

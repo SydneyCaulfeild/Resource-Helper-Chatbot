@@ -1,5 +1,5 @@
 /**
- * Responds to a MESSAGE event in Hangouts Chat.
+ * Responds to a MESSAGE event in Hangouts Chat
  *
  * @param {Object} event the event object from Hangouts Chat
  */
@@ -18,18 +18,21 @@ function onMessage(event) {
     return { "text": message };
   }
   
-  // If the user wants to create a new document and add it to an existing unique folder.
+  // If the user wants to create a new document and add it to an existing unique folder
   else if (strLowerCase.includes("new doc:") && strLowerCase.includes("folder:")) {
+    // Get the name of the file and folder
     var fileName = str.match(/"(.*?)"/g)[0];
     fileName = fileName.substring(1, fileName.length-1);
     var folderName = str.match(/"(.*?)"/g)[1];
     folderName = folderName.substring(1, folderName.length-1);
-    
+    // Find the folder
     var folder = DriveApp.getFoldersByName(folderName).next();
     var folderId = folder.getId();
+    // Create a new doc
     var newDoc = DocumentApp.create(fileName).getId();
     var file = DriveApp.getFileById(newDoc);
     var fileId = file.getId();
+    
     folder.addFile(file);
     
     var widgets = [{
@@ -61,51 +64,39 @@ function onMessage(event) {
   }];
 
   return createCardResponse(widgets);
-  }
+  } 
   
-  // If the user wants to create a new document but NOT add it to a folder (leave it in drive's main folder).
-  else if (strLowerCase.includes("new doc:")) {
-    var fileName = str.match(/"(.*?)"/g)[0];
-    fileName = fileName.substring(1, fileName.length-1);
-    var file = DocumentApp.create(fileName);
-    var fileId = file.getId();
+  // If the user wants to create a new doc (not in any folder) or a new folder
+  else if (strLowerCase.includes("new folder:") || strLowerCase.includes("new doc:")) {
+    // Get the name of the new folder or doc
+    var Name = str.match(/"(.*?)"/g)[0];
+    Name = Name.substring(1, Name.length-1);
     
-    var widgets = [{
-    "textParagraph": {
-      "text": "I have created a file named " + fileName +"."
-    },
-    "buttons": [{
-      "textButton": {
-        "text": "Open new file: " + fileName,
-        "onClick": {
-          "openLink": {
-            "url": "https://docs.google.com/document/d/" + fileId + "/edit"
-          }
-        }
-      }
-    }]
-    }];
-
-    return createCardResponse(widgets);    
-  }
-  
-  /// If the user wants to create a new folder.
-  else if (strLowerCase.includes("new folder:")) {
-    var folderName = str.match(/"(.*?)"/g)[0];
-    folderName = folderName.substring(1, folderName.length-1);
-    var folder = DriveApp.createFolder(folderName);
-    var folderId = folder.getId();
+    // If the user wants a new folder, create a new folder
+    if (strLowerCase.includes("folder")) {
+      var folder = DriveApp.createFolder(Name);
+      var Id = folder.getId();
+      var type = "folder";
+      var url = "https://drive.google.com/corp/drive/folders/" + Id;
+    }
+    // Else if the user wants a new doc, create a new file
+    else {
+      var file = DocumentApp.create(Name);
+      var fileId = file.getId();
+      var type = "file";
+      var url = "https://docs.google.com/document/d/" + fileId + "/edit";
+    }
 
     var widgets = [{
     "textParagraph": {
-      "text": "I have created a folder named " + folderName + "."
+      "text": "I have created a " + type + " named " + Name + "."
     },
     "buttons": [{
       "textButton": {
-        "text": "Open new folder: " + folderName,
+        "text": "Open new " + type + ": " + Name,
         "onClick": {
           "openLink": {
-            "url": "https://drive.google.com/corp/drive/folders/" + folderId
+            "url": url
           }
         }
       }
@@ -113,7 +104,7 @@ function onMessage(event) {
     }];
 
     return createCardResponse(widgets);
-  }  
+  }
   
   // If the user wants to open an existing folder.
   else if (strLowerCase.includes("open folder:")) {
@@ -161,55 +152,35 @@ function onMessage(event) {
     return {"text" : message};
   }
   
-  // If a user wants to be added as an editor to a document.
-  else if (strLowerCase.includes("give edit access to file:")) {
+  // If the user wants to give editing or commenting access to a document
+  else if (strLowerCase.includes("give comment access to file:") || strLowerCase.includes("give edit access to file:")) {
+    // Find the file
     var fileName = str.match(/"(.*?)"/g)[0];
     fileName = fileName.substring(1, fileName.length-1);
     var file = DriveApp.getFilesByName(fileName).next();
     var fileId = file.getId();
-    
+    // Get the list of people mentioned in the message
     var requests = event.message.annotations;
-    var message = "I have added the following users as editors to " + fileName + ":";
     
+    if (strLowerCase.includes("edit")) {
+      var type = "editors";
+    }  
+    else {
+      var type = "commenters";
+    }  
+    
+    var message = "I have added the following users as " + type + " to " + fileName + ":";
+    // Start index at 1 to skip the annotation for the bot
     for (var i = 1; i < requests.length; i++){
-      var requestingUser = requests[i].userMention.user;
-      file.addEditor(requestingUser.email);          
-      message += "\n- " + requestingUser.displayName;
-    }
-    
-    var widgets = [{
-    "textParagraph": {
-      "text": message
-    },
-    "buttons": [{
-      "textButton": {
-        "text": "Open the file: " + fileName,
-        "onClick": {
-          "openLink": {
-            "url": "https://docs.google.com/document/d/" + fileId + "/edit"
-          }
-        }
+      // If they want to give edit access
+      if (type == "editors") {
+        file.addEditor(requests[i].userMention.user.email); 
       }
-    }]
-    }];
-
-    return createCardResponse(widgets);
-  }
-  
-  // If a user wants to be added as a commenter to a document.
-  else if (strLowerCase.includes("give comment access to file:")) {
-    var fileName = str.match(/"(.*?)"/g)[0];
-    fileName = fileName.substring(1, fileName.length-1);
-    var file = DriveApp.getFilesByName(fileName).next();
-    var fileId = file.getId();
-    
-    var requests = event.message.annotations;
-    var message = "I have added the following users as commenters to " + fileName + ":";
-    
-    for (var i = 1; i < requests.length; i++){
-      var requestingUser = requests[i].userMention.user;
-      file.addCommenter(requestingUser.email);         
-      message += "\n- " + requestingUser.displayName;
+      // Else if they want to give comment access
+      else {
+        file.addCommenter(requests[i].userMention.user.email);
+      }          
+      message += "\n- " + requests[i].userMention.user.displayName;
     }
   
     var widgets = [{
@@ -231,20 +202,31 @@ function onMessage(event) {
     return createCardResponse(widgets);
   }
   
-  // If a user wants to be added as an editor to an entire folder.
-  else if (strLowerCase.includes("give edit access to folder:")) {
+  // If a user wants to be added as an editor or a viewer to an entire folder.
+  else if (strLowerCase.includes("give edit access to folder:") || strLowerCase.includes("give view access to folder:")) {
     var folderName = str.match(/"(.*?)"/g)[0];
     folderName = folderName.substring(1, folderName.length-1);
     var folder = DriveApp.getFoldersByName(folderName).next();
     var folderId = folder.getId();
     
+    if (strLowerCase.includes("edit")) {
+      var type = "editors";
+    }  
+    else {
+      var type = "viewers";
+    }
+    
     var requests = event.message.annotations;
-    var message = "I have added the following users as editors to " + folderName + ":";
+    var message = "I have added the following users as " + type + " to " + folderName + ":";
     
     for (var i = 1; i < requests.length; i++){
-      var requestingUser = requests[i].userMention.user;
-      folder.addEditor(requestingUser.email);          
-      message += "\n- " + requestingUser.displayName;
+      if (type == "editors") {
+        folder.addEditor(requests[i].userMention.user.email);   
+      }
+      else {
+        folder.addViewer(requests[i].userMention.user.email);
+      }        
+      message += "\n- " + requests[i].userMention.user.displayName;
     }
     
     var widgets = [{
@@ -265,42 +247,6 @@ function onMessage(event) {
 
     return createCardResponse(widgets);
   }
-  
-  // If a user wants to be added as a viewer to an entire folder.
-  else if (strLowerCase.includes("give view access to folder:")) {
-    var folderName = str.match(/"(.*?)"/g)[0];
-    folderName = folderName.substring(1, folderName.length-1);
-    var folder = DriveApp.getFoldersByName(folderName).next();
-    var folderId = folder.getId();
-    
-    var requests = event.message.annotations;
-    var message = "I have added the following users as viewers to " + folderName + ":";
-    
-    for (var i = 1; i < requests.length; i++){
-      var requestingUser = requests[i].userMention.user;
-      folder.addViewer(requestingUser.email);          
-      message += "\n- " + requestingUser.displayName;
-    }
-  
-    var widgets = [{
-    "textParagraph": {
-      "text": message
-    },
-    "buttons": [{
-      "textButton": {
-        "text": "Open the folder: " + folderName,
-        "onClick": {
-          "openLink": {
-            "url": "https://drive.google.com/corp/drive/folders/" + folderId 
-          }
-        }
-      }
-    }]
-    }];
-
-    return createCardResponse(widgets);
-  }
-  
   
   // If the user did not send an appropriate command.
   return { "text": "I am sorry, that is not one of my commands. Please type <help> to view commands I respond to." };
@@ -353,5 +299,3 @@ function onAddToSpace(event) {
 function onRemoveFromSpace(event) {
   console.info("Bot removed from ", event.space.name);
 }
-
-

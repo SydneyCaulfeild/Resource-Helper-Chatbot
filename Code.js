@@ -1,8 +1,32 @@
+var teamEmails = [];
+
+// Add new contacts to Realtime Database
+function addNewContacts() {
+  var firebaseUrl = "https://stepladder-2020.firebaseio.com/";
+  var secret = "eW305SVuKoHMfdnDlEyxQMGqgU6cCXTH1r0uoSz9";
+  var base = FirebaseApp.getDatabaseByUrl(firebaseUrl, secret);
+  base.setData("Sydney-CAULFEILD", {team: "STEPladder", firstName:"Sydney", lastName: "CAULFEILD", emailAddress: "scaulfeild@google.com"});
+  base.setData("Miasya-BULGER", {team: "STEPladder", firstName:"Miasya", lastName: "BULGER", emailAddress: "miasya@google.com"});
+  base.setData("Tony-SHEN", {team: "STEPladder", firstName:"Tony", lastName: "SHEN", emailAddress: "tonyshen@google.com"});
+}
+
+// Read emails of people on a specified team from firebase
+function getTeamEmails() {
+  var firebaseUrl = "https://stepladder-2020.firebaseio.com/";
+  var base = FirebaseApp.getDatabaseByUrl(firebaseUrl);
+  var queryParameters = {orderBy:"team", equalTo: "STEPladder"};
+  var data = base.getData("", queryParameters);
+  for(var i in data) {
+    Logger.log(data[i].firstName + ' ' + data[i].lastName + ' - ' + data[i].emailAddress);
+    teamEmails.push(data[i].emailAddress);
+  }
+  for(var i in teamEmails) {
+    Logger.log(teamEmails[i]);
+  }
+}
+
 // Id for a team's template doc. The owner of this doc must first share it with a user before that user can make a copy
 var templateDocId = "1AodNqugPXANOPvgI4VCPIpFRfxUT6Qe7mxmX33ip45A";
-
-// Emails of team members who will be given access to files or folders when you say share with team
-var teamEmails = ["scaulfeild@google.com", "tonyshen@google.com", "miasya@google.com"];
 
 
 /**
@@ -76,12 +100,12 @@ function onMessage(event) {
   // If the user wants to create a new doc (not in any folder) or a new folder
   else if (strLowerCase.includes("new folder:") || strLowerCase.includes("new doc:")) {
     // Get the name of the new folder or doc
-    var Name = str.match(/"(.*?)"/g)[0];
-    Name = Name.substring(1, Name.length-1);
+    var name = str.match(/"(.*?)"/g)[0];
+    name = name.substring(1, name.length-1);
     
     // If the user wants a new folder, create a new folder
     if (strLowerCase.includes("folder")) {
-      var folder = DriveApp.createFolder(Name);
+      var folder = DriveApp.createFolder(name);
       var Id = folder.getId();
       var type = "folder";
       var url = "https://drive.google.com/corp/drive/folders/" + Id;
@@ -96,11 +120,11 @@ function onMessage(event) {
 
     var widgets = [{
     "textParagraph": {
-      "text": "I have created a " + type + " named " + Name + "."
+      "text": "I have created a " + type + " named " + name + "."
     },
     "buttons": [{
       "textButton": {
-        "text": "Open new " + type + ": " + Name,
+        "text": "Open new " + type + ": " + name,
         "onClick": {
           "openLink": {
             "url": url
@@ -285,25 +309,26 @@ function onMessage(event) {
   
   // Give your team edit access to a doc or folder
   else if (strLowerCase.includes("give team edit access to doc:") || strLowerCase.includes("give team edit access to folder:")) {
-    var Name = str.match(/"(.*?)"/g)[0];
-    Name = Name.substring(1, Name.length-1);
+    getTeamEmails();
+    var name = str.match(/"(.*?)"/g)[0];
+    name = name.substring(1, name.length-1);
     
     if (strLowerCase.includes("doc")) {
-      var file = DriveApp.getFilesByName(Name).next();
+      var file = DriveApp.getFilesByName(name).next();
       var Id = file.getId();
       file.addEditors(teamEmails);
       var type = "file";
       var url = "https://docs.google.com/document/d/" + Id + "/edit";
     }
     else {
-      var folder = DriveApp.getFoldersByName(Name).next();
+      var folder = DriveApp.getFoldersByName(name).next();
       var Id = folder.getId();
       folder.addEditors(teamEmails);
       var type = "folder";
       var url = "https://drive.google.com/corp/drive/folders/" + Id; 
     }
         
-    var message = "I have added the following users as editors to " + Name + ":";
+    var message = "I have added the following users as editors to " + name + ":";
     for (var i = 0; i < teamEmails.length; i++){          
       message += "\n- " + teamEmails[i];
     }
@@ -314,7 +339,7 @@ function onMessage(event) {
     },
     "buttons": [{
       "textButton": {
-        "text": "Open the " + type + ": " + Name,
+        "text": "Open the " + type + ": " + name,
         "onClick": {
           "openLink": {
             "url": url
@@ -328,7 +353,7 @@ function onMessage(event) {
   }
   
   // If the user did not send an appropriate command.
-  return { "text": "I am sorry, that is not one of my commands. Please type <help> to view commands I respond to." };
+  return { "text": "I am sorry, that is not one of my commands. Please type <help> to view commands I respond to and remember to enclose your folder or document's name in double quotes." };
 }
 
 /**
